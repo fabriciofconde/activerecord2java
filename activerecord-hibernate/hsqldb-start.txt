@@ -1,2 +1,2 @@
-cd C:\Users\ffc\.m2\repository\org\hsqldb\hsqldb\2.3.1
+cd C:\Users\FABRICIOConde\.m2\repository\org\hsqldb\hsqldb\2.3.1
 java -cp hsqldb-2.3.1.jar org.hsqldb.Server

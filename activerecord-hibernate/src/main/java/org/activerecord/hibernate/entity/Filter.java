@@ -1,7 +1,6 @@
 package org.activerecord.hibernate.entity;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.activerecord.hibernate.entity.enums.Operator;
@@ -21,24 +20,22 @@ public class Filter {
 	private boolean cacheable = false;
 	
 	private ArrayList<Condition> conditions = new ArrayList<Condition>();
+	private ArrayList<Order> orders = new ArrayList<Order>();
+	
 	
 	/**
-	 * @param conditions
+	 * 
 	 * @param sql
 	 * @param pageNo
 	 * @param perPage
 	 * @param cacheable
-	 * @param readOnly
-	 * @param shouldPage
 	 */
-	private Filter(String sql, int pageNo, int perPage, boolean cacheable, Condition... conditions) {
+	private Filter(String sql, int pageNo, int perPage, boolean cacheable) {
 		super();
 		this.sql = sql;
 		this.pageNo = pageNo > 0 ? pageNo : 1;
 		this.perPage = (perPage < 1) ? 0 : perPage;
 		this.cacheable = cacheable;
-		if (conditions != null && conditions.length > 0)
-			this.conditions.addAll(Arrays.asList(conditions));
 	}
 
 	/**
@@ -66,10 +63,13 @@ public class Filter {
 
 	/**
 	 * @param conditions the conditions to set
+	 * @param orders the orders to set
 	 */
-	public void add(List<Condition> conditions) {
+	public void add(List<Condition> conditions, List<Order> orders) {
 		if (conditions != null && !conditions.isEmpty())
 			this.conditions.addAll(conditions);
+		if (orders != null && !orders.isEmpty())
+			this.orders.addAll(orders);
 	}
 	
 	/**
@@ -79,6 +79,24 @@ public class Filter {
 	 */
 	public void addCondition(String name, Object value) {
 		addCondition(name, Operator.eq, value);
+	}
+	
+	/**
+	 * 
+	 * @param name
+	 * @param value
+	 */
+	public void addConditionIsNull(String name) {
+		addCondition(name, Operator.isNull, null);
+	}
+	
+	/**
+	 * 
+	 * @param name
+	 * @param value
+	 */
+	public void addConditionIsNotNull(String name) {
+		addCondition(name, Operator.isNotNull, null);
 	}
 	
 	/**
@@ -112,6 +130,13 @@ public class Filter {
 				writer.append(conditions.get(i).constructQuery()).append(" and ");
 			writer.append(conditions.get(size - 1).constructQuery());
 		}
+		if (orders != null && !orders.isEmpty()) {
+			writer.append(" order by  ");
+			int size = orders.size();
+			for (int i = 0; i < size - 1; i++)
+				writer.append(orders.get(i).constructQuery()).append(", ");
+			writer.append(orders.get(size - 1).constructQuery());
+		}
 		return writer.toString();
 	}
 	
@@ -124,6 +149,7 @@ public class Filter {
 			for (Condition condition : conditions)
 				condition.setParameters(query);
 	}
+	
 	
 	/**
 	 * 
@@ -145,6 +171,10 @@ public class Filter {
 			criteria.setFirstResult(getStart());
 			criteria.setMaxResults(perPage);
 		}
+	}
+	
+	public void addOrder(String field, boolean asc) {
+		orders.add(new Order(field, asc));
 	}
 	
 	/**
@@ -171,6 +201,10 @@ public class Filter {
 		if (conditions != null || !conditions.isEmpty())
 			for (Condition condition : conditions)
 				condition.constructCriteria(criteria);
+		if (orders != null && !orders.isEmpty()) {
+			for (Order order : orders)
+				order.constructCriteria(criteria);
+		}
 	}
 	
 	/**
@@ -196,7 +230,7 @@ public class Filter {
 	 */
 	public Filter clone(boolean paginate) {
 		Filter clone = new Filter(sql, pageNo, perPage, cacheable);
-		clone.add(conditions);
+		clone.add(conditions, orders);
 		return clone;
 	}
 
@@ -315,5 +349,5 @@ public class Filter {
 		}
 		
 	}
-	
+
 }

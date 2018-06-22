@@ -96,6 +96,11 @@ public enum Operator {
 	
 	in("in") {
 		@Override
+		public String constructCondition(String propertyName) {
+			return String.format("%s in (:%s)", propertyName, propertyName, propertyName);
+		}
+		
+		@Override
 		protected Criterion createCriterion(String property, Object... parameters) {
 			return Restrictions.in(property, parameters);
 		}
@@ -129,29 +134,79 @@ public enum Operator {
 		public String constructCondition(String propertyName) {
 			return String.format(" %s %s", propertyName, getOperator());
 		}
+	},
+	
+	isNull("is null") {
+		@Override
+		protected Criterion createCriterion(String propertyName, Object... parameters) {
+			return Restrictions.isNotNull(propertyName);
+		}
+
+		@Override
+		public void setParameters(Query query, String name, Object value) {
+			
+		}
+
+		@Override
+		public String constructCondition(String propertyName) {
+			return String.format(" %s %s", propertyName, getOperator());
+		}
 	};
 	
 	
 	private String operator;
 	
+	
+	/**
+	 * 
+	 * @param operator
+	 */
 	private Operator(String operator) {
 		this.operator = operator;
 	}
 	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	protected String getOperator() {
 		return operator;
 	}
 
+	/**
+	 * 
+	 * @param propertyName
+	 * @return
+	 */
 	public String constructCondition(String propertyName) {
 		return String.format(" %s %s :%s", propertyName, operator, propertyName);
 	}
 	
+	/**
+	 * 
+	 * @param propertyName
+	 * @param parameters
+	 * @return
+	 */
 	public Criterion constructCondition(String propertyName, Object... parameters) {
 		return createCriterion(propertyName, parameters);
 	}
 	
+	/**
+	 * 
+	 * @param propertyName
+	 * @param parameters
+	 * @return
+	 */
 	protected abstract Criterion createCriterion(String propertyName, Object... parameters);
 	
+	/**
+	 * 
+	 * @param query
+	 * @param name
+	 * @param value
+	 */
 	public void setParameters(Query query, String name, Object value) {
 		//value = ConvertUtil.convert(value, param.getParameterType());
 		query.setParameter(name, value);
