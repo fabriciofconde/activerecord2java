@@ -8,6 +8,7 @@ import java.util.Map;
 import org.activerecord.hibernate.entity.DummyModel;
 import org.activerecord.hibernate.entity.Filter;
 import org.activerecord.hibernate.entity.enums.Operator;
+import org.hibernate.type.StandardBasicTypes;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -225,6 +226,30 @@ public class DummyModelTest extends ModelBaseTest {
 		example.setColumn1("naoTem");
 		List<DummyModel> listDummyModelExample2 = DummyModel.findAllByExample(DummyModel.class, example);
 		Assert.assertTrue(listDummyModelExample2.isEmpty());
+	}
+	
+	@Ignore
+	@Test
+	public void testFindSqlRestrictionNative() {
+		String id = "testFindSqlRestrictionNative1";
+		DummyModel dummyModel = DummyModel.get(DummyModel.class, id);
+		if (dummyModel == null) {
+			dummyModel = new DummyModel();
+			dummyModel.setId(id);
+			dummyModel.setColumn1("001");
+			dummyModel.save();
+		} else {
+			dummyModel.setColumn1("001");
+			dummyModel.update();
+		}
+		
+		Filter filter = Filter.Builder.select().build();
+		filter.addCondition("id", id);
+		filter.addConditionHQL("to_number(column1) = ?", "1", StandardBasicTypes.STRING);
+		List<DummyModel> list = DummyModel.findAllBy(DummyModel.class, filter);
+		System.out.println(list);
+		
+		Assert.assertNotNull(list);
 	}
 	
 	private DummyModel createDummyModel(final String id) {

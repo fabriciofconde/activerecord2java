@@ -5,7 +5,9 @@ import java.util.List;
 
 import org.activerecord.hibernate.entity.enums.Operator;
 import org.hibernate.Criteria;
+import org.hibernate.LockOptions;
 import org.hibernate.Query;
+import org.hibernate.type.Type;
 
 /**
  * 
@@ -20,6 +22,7 @@ public class Filter {
 	private boolean cacheable = false;
 	
 	private ArrayList<Condition> conditions = new ArrayList<Condition>();
+	private ArrayList<ConditionHQL> conditionsHQL = new ArrayList<ConditionHQL>();
 	private ArrayList<Order> orders = new ArrayList<Order>();
 	
 	
@@ -37,6 +40,7 @@ public class Filter {
 		this.perPage = (perPage < 1) ? 0 : perPage;
 		this.cacheable = cacheable;
 	}
+	
 
 	/**
 	 * 
@@ -66,10 +70,12 @@ public class Filter {
 	 * @param orders the orders to set
 	 */
 	public void add(List<Condition> conditions, List<Order> orders) {
-		if (conditions != null && !conditions.isEmpty())
+		if (conditions != null && !conditions.isEmpty()) {
 			this.conditions.addAll(conditions);
-		if (orders != null && !orders.isEmpty())
+		}
+		if (orders != null && !orders.isEmpty()) {
 			this.orders.addAll(orders);
+		}
 	}
 	
 	/**
@@ -110,6 +116,26 @@ public class Filter {
 	}
 	
 	/**
+	 * 
+	 * @param sqlRestriction
+	 * @param value
+	 * @param type
+	 */
+	public void addConditionHQL(String sqlRestriction, Object value, Type type) {
+		conditionsHQL.add(new ConditionHQL(sqlRestriction, value, type));
+	}
+	
+	/**
+	 * 
+	 * @param sqlRestriction
+	 * @param value
+	 * @param type
+	 */
+	public void addConditionHQL(String sqlRestriction, Object[] value, Type[] type) {
+		conditionsHQL.add(new ConditionHQL(sqlRestriction, value, type));
+	}
+	
+	/**
 	 * @return the shouldPage
 	 */
 	private boolean isShouldPage() {
@@ -123,20 +149,42 @@ public class Filter {
 	 */
 	public <T extends Model> String constructQuery(Class<T> clazz) {
 		StringBuilder writer = new StringBuilder(String.format(sql, clazz.getName()));
-		if (conditions != null && !conditions.isEmpty()) {
+		
+		if (!conditions.isEmpty() || !conditionsHQL.isEmpty()) {
 			writer.append(" where ");
-			int size = conditions.size();
-			for (int i = 0; i < size - 1; i++)
-				writer.append(conditions.get(i).constructQuery()).append(" and ");
-			writer.append(conditions.get(size - 1).constructQuery());
 		}
+		
+		if (conditionsHQL != null && !conditionsHQL.isEmpty()) {
+			for (int i = 0; i < conditionsHQL.size(); i++) {
+				writer.append(conditionsHQL.get(i).constructQuery());
+				if (i+1 < conditionsHQL.size()) {
+					writer.append(" and ");
+				}
+			}
+		}
+		
+		if (!conditions.isEmpty()) {
+			if (!conditionsHQL.isEmpty()) {
+				writer.append(" and ");
+			}
+			
+			for (int i = 0; i < conditions.size(); i++) {
+				writer.append(conditions.get(i).constructQuery());
+				if (i+1 < conditions.size()) {
+					writer.append(" and ");
+				}
+			}
+		}
+		
 		if (orders != null && !orders.isEmpty()) {
 			writer.append(" order by  ");
 			int size = orders.size();
-			for (int i = 0; i < size - 1; i++)
+			for (int i = 0; i < size - 1; i++) {
 				writer.append(orders.get(i).constructQuery()).append(", ");
+			}
 			writer.append(orders.get(size - 1).constructQuery());
 		}
+		
 		return writer.toString();
 	}
 	
@@ -145,11 +193,19 @@ public class Filter {
 	 * @param query
 	 */
 	public void setParameters(Query query) {
-		if (conditions != null && !conditions.isEmpty())
-			for (Condition condition : conditions)
+		if (conditionsHQL != null && !conditionsHQL.isEmpty()) {
+			int position = 0;
+			for (ConditionHQL conditionNative : conditionsHQL) {
+				position = conditionNative.setParameters(query, position);
+			}
+		}
+		
+		if (conditions != null && !conditions.isEmpty()) {
+			for (Condition condition : conditions) {
 				condition.setParameters(query);
+			}
+		}
 	}
-	
 	
 	/**
 	 * 
@@ -184,6 +240,16 @@ public class Filter {
 	public void config(Query query) {
 		query.setCacheable(cacheable);
 	}
+	
+	/**
+	 * 
+	 * @param query
+	 */
+	public void lockOptions(Query query, boolean useQueryHintNolockAlways) {
+		if (useQueryHintNolockAlways) {
+			query.setLockOptions(LockOptions.READ);
+		}
+	}
 
 	/**
 	 * 
@@ -198,12 +264,20 @@ public class Filter {
 	 * @param criteria
 	 */
 	public <T extends Model> void constructConditionInCriteria(Criteria criteria) {
-		if (conditions != null || !conditions.isEmpty())
-			for (Condition condition : conditions)
+		if (!conditionsHQL.isEmpty()) {
+			for (ConditionHQL conditionNative : conditionsHQL) {
+				conditionNative.constructCriteria(criteria);
+			}
+		}
+		if (!conditions.isEmpty()) {
+			for (Condition condition : conditions) {
 				condition.constructCriteria(criteria);
+			}
+		}
 		if (orders != null && !orders.isEmpty()) {
-			for (Order order : orders)
+			for (Order order : orders) {
 				order.constructCriteria(criteria);
+			}
 		}
 	}
 	
@@ -285,6 +359,7 @@ public class Filter {
 			return false;
 		return true;
 	}
+	
 	
 	public static class Builder {
 		

@@ -17,6 +17,7 @@ public class Condition {
 	private Object value;
 	private Operator operator;
 	
+	
 	/**
 	 * Default constructor
 	 */
@@ -42,6 +43,7 @@ public class Condition {
 		this(name, Operator.eq, value);
 	}
 	
+	
 	/**
 	 * @return the operator
 	 */
@@ -60,14 +62,14 @@ public class Condition {
 		return operator.constructCondition(name);
 	}
 	
+	public void setParameters(Query query) {
+		operator.setParameters(query, name, value);
+	}
+	
 	public <T extends Model> Criterion constructCriteria(Criteria criteria) {
 		Criterion criterion = operator.constructCondition(name, value);
 		criteria.add(criterion);
 		return criterion;
-	}
-	
-	public void setParameters(Query query) {
-		operator.setParameters(query, name, value);
 	}
 	
 	/*private <T, S> Path<?> getPath(From<T, S> root, String name) {

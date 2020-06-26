@@ -20,4 +20,11 @@ public interface HibernateConfig {
 	 */
 	void config();
 	
+	
+	/**
+	 * 
+	 * @return
+	 */
+	boolean useQueryHintNolockAlways();
+	
 }

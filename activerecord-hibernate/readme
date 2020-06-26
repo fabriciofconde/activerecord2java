@@ -1,0 +1,20 @@
+Before run projec is need to maven install some projects to build libs
+
+passo a passo para montar o pacote macbook com eclipses mais novos que ñ suportam java 6 para executar o maven embedded
+- instalar maven 3.2
+brew install maven@3.2
+
+- instalar jdk 6
+brew install jdk@6
+
+- colocar maven no path
+export PATH="/usr/local/opt/maven@3.2/bin:$PATH"
+
+- colocar jdk no path
+export JAVA_HOME=/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/
+
+- acessar path da aplicação no filesystem
+cd ~/dev/fca/git/commercial/msc/mscs/
+
+- executar maven
+mvn clean install -DskipTests

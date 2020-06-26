@@ -23,6 +23,7 @@ public class BaseObject {
 		filter.setParameters(query);
 		filter.setPage(query);
 		filter.config(query);
+		filter.lockOptions(query, hibernateConfig.useQueryHintNolockAlways());
 		return query;
 	}
 	

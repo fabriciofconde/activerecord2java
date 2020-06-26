@@ -482,9 +482,6 @@ public abstract class Model extends BaseObject implements Serializable, InsertLo
 	 */
 	public static <T extends Model> Number countByExample(final Class<T> clazz, final T example) {
 		ClassMetadata classMetadata = getSession().getSessionFactory().getClassMetadata(clazz);
-		/*Field[] fields = clazz.getDeclaredFields();
-        if ((fields == null || fields.length == 0))
-        	fields = clazz.getSuperclass().getDeclaredFields();*/
 		final Criteria criteria = getSession().createCriteria(clazz);
 		criteria.setProjection(Projections.countDistinct(classMetadata.getIdentifierPropertyName()));
 		criteria.add(
@@ -603,8 +600,28 @@ public abstract class Model extends BaseObject implements Serializable, InsertLo
 	 * @param sort
 	 * @return
 	 */
-	@SuppressWarnings("unchecked")
 	public static <T extends Model> List<T> findAllByExample(final Class<T> clazz, final T example, Integer pageSize, Integer start, String sort) {
+        boolean asc = true;
+        if (sort != null && !sort.trim().equals("") && sort.trim().startsWith("-")) {
+        	asc = false;
+        	sort = sort.substring(1, sort.length());
+		}
+		return findAllByExample(clazz, example, pageSize, start, sort, asc);
+    }
+	
+	
+	/**
+	 * 
+	 * @param clazz
+	 * @param example
+	 * @param pageSize
+	 * @param start
+	 * @param sort
+	 * @param order
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T extends Model> List<T> findAllByExample(final Class<T> clazz, final T example, Integer pageSize, Integer start, String sort, boolean asc) {
         final Session s = getSession();
         final Criteria c = s.createCriteria(clazz);
         c.add(
@@ -613,19 +630,15 @@ public abstract class Model extends BaseObject implements Serializable, InsertLo
         	.ignoreCase()
         	.setPropertySelector(new PropertySelectorImpl()));
         
-		if(sort != null && !sort.equals("")) {
-			if(sort.startsWith("-")) {
-				c.addOrder(Order.desc(sort.substring(1, sort.length())));
-			} else {
-				c.addOrder(Order.asc(sort));
-			}
+		if (sort != null && !sort.equals("")) {
+			c.addOrder(asc ? Order.asc(sort) : Order.desc(sort));
 		}
 		
-		if(pageSize != null) {
+		if (pageSize != null) {
 			c.setMaxResults(pageSize);
 		}
 		
-		if(start != null) {
+		if (start != null) {
 			c.setFirstResult(start);
 		}
         

@@ -119,6 +119,31 @@ public enum Operator {
 		}
 	},
 	
+	notIn("not in") {
+		@Override
+		public String constructCondition(String propertyName) {
+			return String.format("%s not in (:%s)", propertyName, propertyName, propertyName);
+		}
+		
+		@Override
+		protected Criterion createCriterion(String property, Object... parameters) {
+			return Restrictions.in(property, parameters);
+		}
+
+		@Override
+		public void setParameters(Query query, String name, Object value) {
+			if (value instanceof Object[]) {
+				value = Arrays.asList((Object[]) value);
+			}
+			ArrayList<Object> list = new ArrayList<Object>();
+			for (Object val : (List<?>) value) {
+				//list.add(ConvertUtil.convert(val, param.getParameterType()));
+				list.add(val);
+			}
+			query.setParameterList(name, list);
+		}
+	},
+	
 	isNotNull("is not null") {
 		@Override
 		protected Criterion createCriterion(String propertyName, Object... parameters) {

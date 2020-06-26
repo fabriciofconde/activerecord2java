@@ -35,10 +35,18 @@ public class PropertyUtil {
 	 * <p>Used to determine properties to check for a "simple" dependency-check.
 	 * @param clazz the type to check
 	 * @return whether the given type represents a "simple" property
+	 * @throws InvocationTargetException 
+	 * @throws IllegalAccessException 
+	 * @throws NoSuchMethodException 
+	 * @throws ClassNotFoundException 
+	 * @throws IllegalArgumentException 
+	 * @throws SecurityException 
 	 * @see org.springframework.beans.factory.support.RootBeanDefinition#DEPENDENCY_CHECK_SIMPLE
 	 * @see org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory#checkDependencies
 	 */
-	public static boolean isSimpleProperty(Class<?> clazz) {
+	public static boolean isSimpleProperty(Class<?> clazz) 
+	throws SecurityException, IllegalArgumentException, ClassNotFoundException, NoSuchMethodException, 
+	IllegalAccessException, InvocationTargetException {
 		return isSimpleValueType(clazz) || (clazz.isArray() && isSimpleValueType(clazz.getComponentType()));
 	}
 
@@ -49,8 +57,16 @@ public class PropertyUtil {
 	 * 
 	 * @param clazz the type to check
 	 * @return whether the given type represents a "simple" value type
+	 * @throws InvocationTargetException 
+	 * @throws IllegalAccessException 
+	 * @throws NoSuchMethodException 
+	 * @throws ClassNotFoundException 
+	 * @throws IllegalArgumentException 
+	 * @throws SecurityException 
 	 */
-	public static boolean isSimpleValueType(Class<?> clazz) {
+	public static boolean isSimpleValueType(Class<?> clazz) 
+	throws SecurityException, IllegalArgumentException, ClassNotFoundException, NoSuchMethodException, 
+	IllegalAccessException, InvocationTargetException {
 		return isPrimitiveOrWrapper(clazz) || clazz.isEnum() ||
 				CharSequence.class.isAssignableFrom(clazz) ||
 				Number.class.isAssignableFrom(clazz) ||
@@ -119,24 +135,22 @@ public class PropertyUtil {
 	 * 
 	 * @param type
 	 * @return
+	 * @throws NoSuchMethodException 
+	 * @throws SecurityException 
 	 */
-	public static Class<?> getCollectionElementType(Type type) {
+	public static Class<?> getCollectionElementType(Type type) throws SecurityException, NoSuchMethodException {
 		if (! (type instanceof ParameterizedType)) {
 			return Object.class;
 		}
 		ParameterizedType ptype = (ParameterizedType) type;
 		Class<?> rawType = (Class<?>) ptype.getRawType();
 		
-		try {
 			if (Collection.class.isAssignableFrom(rawType)) {
 				return TypeToken.of(type).resolveType(Collection.class.getMethod("add", Object.class).getGenericParameterTypes()[0]).getRawType();
 			}
 			if (Map.class.isAssignableFrom(rawType)) {
 				return TypeToken.of(type).resolveType(Map.class.getMethod("put", Object.class, Object.class).getGenericParameterTypes()[1]).getRawType();
 			}
-		} catch (Exception e) {
-			logger.warn("Failed while getting the collection element type", e);
-		}
 		return Object.class;
 	}
 	
@@ -146,8 +160,16 @@ public class PropertyUtil {
 	 * @param bean
 	 * @param name
 	 * @return
+	 * @throws ClassNotFoundException 
+	 * @throws NoSuchMethodException 
+	 * @throws SecurityException 
+	 * @throws IllegalAccessException 
+	 * @throws IllegalArgumentException 
+	 * @throws InvocationTargetException 
 	 */
-	public static Object getProperty(Object bean, String name) {
+	public static Object getProperty(Object bean, String name) 
+	throws ClassNotFoundException, SecurityException, NoSuchMethodException, 
+	IllegalArgumentException, IllegalAccessException, InvocationTargetException {
 		try {
 			Class<?> clazz = Thread.currentThread().getContextClassLoader().loadClass("org.apache.commons.beanutils.PropertyUtils");
 			Method method = clazz.getMethod("getProperty", Object.class, String.class);
@@ -157,10 +179,8 @@ public class PropertyUtil {
 				logger.debug("Getter doesn't exist for the property {} in the class {}", name, bean.getClass());
 				return null;
 			}
-			throw new ActiveRecordHibernateException("Failed while invoking the getter for the property " + name + " in the class " + bean.getClass(), e);
-		} catch (Exception e) {
-			throw new ActiveRecordHibernateException("Failed while invoking the getter for the property " + name + " in the class " + bean.getClass(), e);
-		}
+			throw e;
+		} 
 	}
 	
 	/**
@@ -169,30 +189,36 @@ public class PropertyUtil {
 	 * @param bean
 	 * @param name
 	 * @param value
+	 * @throws ClassNotFoundException 
+	 * @throws NoSuchMethodException 
+	 * @throws SecurityException 
+	 * @throws InvocationTargetException 
+	 * @throws IllegalAccessException 
+	 * @throws IllegalArgumentException 
 	 */
-	public static void setProperty(Object bean, String name, Object value) {
-		try {
-			Class<?> clazz = Thread.currentThread().getContextClassLoader().loadClass("org.apache.commons.beanutils.BeanUtils");
-			Method method = clazz.getMethod("setProperty", Object.class, String.class, Object.class);
+	public static void setProperty(Object bean, String name, Object value) 
+	throws ClassNotFoundException, SecurityException, NoSuchMethodException, 
+	IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+		Class<?> clazz = Thread.currentThread().getContextClassLoader().loadClass("org.apache.commons.beanutils.BeanUtils");
+		Method method = clazz.getMethod("setProperty", Object.class, String.class, Object.class);
+		if (value == null) {
+			method.invoke(null, bean, name, method.getReturnType().cast(value));
+		} else {
 			method.invoke(null, bean, name, value);
-		} catch (Exception e) {
-			throw new ActiveRecordHibernateException("Failed while setting the property", e);
 		}
 	}
 	
-	public static Method getReadMethod(Object bean, String name) {
-		try {
-			Class<?> clazz = Thread.currentThread().getContextClassLoader().loadClass("org.apache.commons.beanutils.PropertyUtils");
-			Method method = clazz.getMethod("getPropertyDescriptor", Object.class, String.class);
-			Object descriptor = method.invoke(null, bean, name);
-			if (descriptor == null) {
-				throw new ActiveRecordHibernateException("Property descriptor not found for the field - " + name);
-			}
-			method = clazz.getMethod("getReadMethod", PropertyDescriptor.class);
-			return (Method) method.invoke(null, descriptor);
-		} catch (Exception e) {
-			throw new ActiveRecordHibernateException("Failed while getting the property descriptor", e);
+	public static Method getReadMethod(Object bean, String name) 
+	throws ClassNotFoundException, SecurityException, NoSuchMethodException, 
+	IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+		Class<?> clazz = Thread.currentThread().getContextClassLoader().loadClass("org.apache.commons.beanutils.PropertyUtils");
+		Method method = clazz.getMethod("getPropertyDescriptor", Object.class, String.class);
+		Object descriptor = method.invoke(null, bean, name);
+		if (descriptor == null) {
+			throw new ActiveRecordHibernateException("Property descriptor not found for the field - " + name);
 		}
+		method = clazz.getMethod("getReadMethod", PropertyDescriptor.class);
+		return (Method) method.invoke(null, descriptor);
 	}
 	
 	/**
@@ -200,14 +226,18 @@ public class PropertyUtil {
 	 * 
 	 * @param clazz
 	 * @return
+	 * @throws ClassNotFoundException 
+	 * @throws NoSuchMethodException 
+	 * @throws SecurityException 
+	 * @throws InvocationTargetException 
+	 * @throws IllegalAccessException 
+	 * @throws IllegalArgumentException 
 	 */
-	public static Boolean isPrimitiveOrWrapper(Class<?> clazz) {
-		try {
-			Class<?> utils = Thread.currentThread().getContextClassLoader().loadClass("org.apache.commons.lang3.ClassUtils");
-			Method method = utils.getMethod("isPrimitiveOrWrapper", Class.class);
-			return (Boolean) method.invoke(null, clazz);
-		} catch (Exception e) {
-			throw new ActiveRecordHibernateException("Failed while getting the property descriptor", e);
-		}
+	public static Boolean isPrimitiveOrWrapper(Class<?> clazz) 
+	throws ClassNotFoundException, SecurityException, NoSuchMethodException, 
+	IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+		Class<?> utils = Thread.currentThread().getContextClassLoader().loadClass("org.apache.commons.lang3.ClassUtils");
+		Method method = utils.getMethod("isPrimitiveOrWrapper", Class.class);
+		return (Boolean) method.invoke(null, clazz);
 	}
 }

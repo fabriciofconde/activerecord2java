@@ -25,4 +25,9 @@ public class HibernateConfigImpl implements HibernateConfig {
 		HibernateUtil.closeSession();
 	}
 
+	@Override
+	public boolean useQueryHintNolockAlways() {
+		return false;
+	}
+
 }

@@ -21,6 +21,7 @@ import javax.persistence.TemporalType;
  * @author fabricio.conde
  *
  */
+@SuppressWarnings("serial")
 @Entity
 public class DummyModel extends Model {
 	

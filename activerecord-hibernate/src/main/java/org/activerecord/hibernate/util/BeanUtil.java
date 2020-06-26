@@ -38,7 +38,7 @@ public class BeanUtil {
 				}
 				Type propertyType = method.getGenericReturnType() != null ? method.getGenericReturnType() : method.getReturnType();
 				Object property = PropertyUtil.getProperty(model, entry.getKey());
-				if (PropertyUtil.isSimpleProperty(entry.getValue().getClass())) {
+				if (entry.getValue() == null || PropertyUtil.isSimpleProperty(entry.getValue().getClass())) {
 					PropertyUtil.setProperty(model, entry.getKey(), entry.getValue());
 				} else if (PropertyUtil.isCollectionProperty(propertyType, false)) {
 					// TODO Need to figure out a way to populate collection
@@ -56,7 +56,7 @@ public class BeanUtil {
 					PropertyUtil.setProperty(model, entry.getKey(), property);
 				}
 			} catch (Exception e) {
-				logger.warn("Failed while loading the attributes to the bean", e);
+				logger.debug("Failed while loading the attributes to the bean", e);
 			}
 		}
 	}
